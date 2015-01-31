@@ -1,3 +1,16 @@
+html {
+  font-family: Verdana, Helvetica;
+}
+
 h1 {
-  text-decoration: underline;
+  font-size: 1.2rem;
+}
+
+.main {
+  width: 75%;
+}
+
+.centered {
+  margin-left: auto;
+  margin-right: auto;
 }

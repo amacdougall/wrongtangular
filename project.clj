@@ -6,16 +6,17 @@
 
   :source-paths ["src/clj" "src/cljs"]
 
-  :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.clojure/clojurescript "0.0-2371" :scope "provided"]
+  :dependencies [[org.clojure/clojure "1.7.0-alpha5"]
+                 [org.clojure/clojurescript "0.0-2740" :scope "provided"]
                  [ring "1.3.1"]
                  [compojure "1.2.0"]
                  [enlive "1.1.5"]
                  [om "0.7.3"]
+                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [figwheel "0.1.4-SNAPSHOT"]
                  [environ "1.0.0"]
-                 [com.cemerick/piggieback "0.1.3"]
-                 [weasel "0.4.0-SNAPSHOT"]
+                 [com.cemerick/piggieback "0.1.5"]
+                 [weasel "0.5.0"]
                  [leiningen "2.5.0"]]
 
   :plugins [[lein-cljsbuild "1.0.3"]
