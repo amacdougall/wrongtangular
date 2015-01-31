@@ -1,5 +1,6 @@
 (ns wrongtangular.core
-  (:require [cljs.core.async :refer [>! <! chan put!] :as async]
+  (:require [wrongtangular.views :as views]
+            [cljs.core.async :refer [>! <! chan put!] :as async]
             [goog.events :as events]
             [goog.dom :as gdom]
             [om.core :as om :include-macros true]
@@ -32,7 +33,7 @@
       (fn [e]
         (put! out (->> (.getResponseText xhr)
                     (.parse js/JSON)
-                    (js->clj)))))
+                    (js->clj))))) ; TODO: use Transit instead?
     (. xhr
       (send url "GET"
         #js {"Content-Type" "application/json"}))
@@ -96,24 +97,6 @@
   (load-initial-data app)
   (handle-inputs app))
 
-;; View shown when 
-(defn loading-view [owner]
-  (reify
-    om/IRender
-    (render [_]
-      (dom/div nil "loading..."))))
-
-(defn chooser-view [app owner]
-  (reify
-    om/IRender
-    (render [_]
-      (let [current-image (next-image app)]
-        (dom/div #js {:className "centered"}
-          (dom/h1 nil "Wrongtangular")
-          (dom/div nil
-            (dom/img #js {:src (current-image "url")}))
-          (dom/div nil (current-image "name")))))))
-
 (defn main []
   (om/root
     (fn [app owner]
@@ -121,8 +104,8 @@
         om/IRender
         (render [_]
           (if-not (:ready? app)
-            (om/build loading-view app)
-            (om/build chooser-view app)))
+            (om/build views/loading app)
+            (om/build views/tinder (next-image app))))
         om/IWillMount
         (will-mount [_]
           (setup app))
