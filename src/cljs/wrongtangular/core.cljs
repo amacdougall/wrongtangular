@@ -74,19 +74,23 @@
       (recur))
     out))
 
-(defn- handle-inputs [app]
-  ; only handle keyboard events, for now
-  (let [body (.-body js/document)
-        keystrokes (chan)
-        inputs (keystrokes->actions keystrokes)]
-    (events/listen body goog.events.EventType.KEYDOWN #(put! keystrokes %))
+(let [body (.-body js/document)
+      keystrokes (chan)
+      handle-event #(put! keystrokes %)
+      inputs (keystrokes->actions keystrokes)]
+  (defn- handle-inputs [app]
+    ; only handle keyboard events, for now
+    (events/listen body goog.events.EventType.KEYDOWN handle-event)
     (go-loop []
-      (let [input (<! inputs)]
+      (when-let [input (<! inputs)]
         (condp = input
           :approve (approve app)
           :reject (reject app)
-          :undo (undo app)))
-      (recur))))
+          :undo (undo app))
+        (recur))))
+  (defn- stop-handling-inputs []
+    (events/unlisten body goog.events.EventType.KEYDOWN handle-event)
+    (async/close! inputs)))
 
 (defn- setup [app]
   (load-initial-data app)
@@ -119,9 +123,11 @@
           (if-not (:ready? app)
             (om/build loading-view app)
             (om/build chooser-view app)))
-        om/IDidMount
-        (did-mount [_]
-          (.log js/console "main/did-mount occurred; ideally this happens once")
-          (setup app))))
+        om/IWillMount
+        (will-mount [_]
+          (setup app))
+        om/IWillUnmount
+        (will-unmount [_]
+          (stop-handling-inputs))))
     app-state
     {:target (. js/document (getElementById "app"))}))
