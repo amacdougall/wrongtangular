@@ -26,17 +26,15 @@
 ;; App state atom. Contains the following keys:
 ;; :ready? - A Boolean which is true when initial data has loaded.
 ;; :direction - Either :forward or :backward, based on advance/undo status.
-;; :queue - A PersistentQueue of items yet to be judged.
+;; :queue - A list of items yet to be judged.
 ;; :complete - A vector of items which have been judged.
 ;;
-;; Note: The queue and complete collections use appropriate data structures.
+;; Note: The list and complete collections use appropriate data structures.
 ;; Use peek/pop/conj and enjoy the freedom from implementation details.
 (defonce app-state (atom {:ready? false,
                           :direction :forward
-                          :queue cljs.core.PersistentQueue.EMPTY,
+                          :queue '()
                           :complete []}))
-; NOTE: You may find online mentions of PersistentQueue/EMPTY; this has been
-; changed to .EMPTY. See https://github.com/clojure/clojurescript/blob/master/src/cljs/cljs/core.cljs
 
 ;; Returns the previous, current, and next images, as a vec. The previous image
 ;; is held for rapid display on undo, the current one is displayed, and the next
@@ -71,8 +69,7 @@
           queue (->> data
                   (remove #(completed-ids (:id %)))
                   (sort-by :id)
-                  (into cljs.core.PersistentQueue.EMPTY))]
-      (.log js/console "restore-from-records: queue %o" (pr-str queue))
+                  (into '()))]
       [queue complete])))
 
 ;; Given a result keyword :approved or :rejected and an app state cursor,
@@ -108,7 +105,6 @@
           ; restore records from localStorage without loading JSON
           (om/transact! app
             (fn [app]
-              (.log js/console "...restored state from localStorage!")
               (assoc app
                      :ready? true
                      :queue queue
@@ -116,10 +112,9 @@
           ; load data from JSON, then set it in the app
           (om/transact! app
             (fn [app]
-              (.log js/console "...loaded data from JSON!")
               (assoc app
                      :ready? true
-                     :queue (into cljs.core.PersistentQueue.EMPTY data))))))))
+                     :queue (into '() data))))))))
 
 ;; Given an input channel of KEYDOWN events, returns an output channel of
 ;; :approve, :reject, and :undo action keywords. Keystrokes not corresponding
@@ -162,9 +157,6 @@
       (reify
         om/IRender
         (render [_]
-          (.log js/console "root: queue of %d items, current-id %s"
-                (count (:queue app))
-                (-> app :queue peek :id))
           (if-not (:ready? app)
             (om/build views/loading app)
             (if-let [current-id (-> app :queue peek :id)]
