@@ -2,6 +2,7 @@
   (:require [wrongtangular.views :as views]
             [wrongtangular.util :as util]
             [cljs.core.async :refer [>! <! chan put!] :as async]
+            [clojure.string :as string]
             [goog.events :as events]
             [goog.dom :as gdom]
             [om.core :as om :include-macros true]
@@ -162,13 +163,30 @@
             (if-let [current-id (-> app :queue peek :id)]
               (dom/div nil
                 (dom/h1 nil "Wrongtangular")
+                (dom/p nil "(to restart, run `localStorage.clear()` in the console and refresh.")
                 (om/build views/progress app)
                 (om/build views/tinder
                   {:image-set (image-set app)
                    :last-action (last-action app)
                    :direction (:direction app)}
                   {:react-key current-id}))
-              (dom/div nil "OUT OF IMAGES, YAY"))))
+              (let [approved-ids (->> (:complete app)
+                                   (filter #(= (:status %) :approved))
+                                   (map #(-> % :item :id)))
+                    rejected-ids (->> (:complete app)
+                                   (filter #(= (:status %) :rejected))
+                                   (map #(-> % :item :id)))]
+                (dom/div nil
+                  (dom/h1 nil "Processing complete!")
+                  (dom/p nil "(to start over, run `localStorage.clear()` in the console and refresh.")
+                  (dom/h2 nil "Approved ids:")
+                  (dom/textarea #js {:rows 20
+                                     :cols 60
+                                     :value (string/join ", " approved-ids)})
+                  (dom/h2 nil "Rejected ids:")
+                  (dom/textarea #js {:rows 20
+                                     :cols 60
+                                     :value (string/join ", " rejected-ids)}))))))
         om/IWillMount
         (will-mount [_]
           (setup app))
