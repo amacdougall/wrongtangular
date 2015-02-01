@@ -43,6 +43,23 @@
                 (image-title next-image)
                 (image-tag next-image)))))))))
 
+(defn progress [app owner]
+  (reify
+    om/IRender
+    (render [_]
+      (let [index (count (:complete app))
+            total (count (mapcat app [:queue :complete]))
+            text (str index "/" total)
+            percentage (-> index
+                         (/ total)
+                         (* 100)
+                         (Math/round)
+                         (str "%"))]
+        (dom/div #js {:className "progress"}
+          (dom/div #js {:className "text"} text)
+          (dom/div #js {:className "total"} "")
+          (dom/div #js {:className "complete"
+                        :style #js {:width percentage}} ""))))))
 
 (defn loading [owner]
   (reify

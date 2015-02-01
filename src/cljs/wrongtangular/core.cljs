@@ -55,11 +55,13 @@
 ;; removes the current item from the queue and adds it to the complete stack as
 ;; a vector in the form {:status result, :item <item>}.
 (defn- advance [result app]
-  (let [{:keys [queue complete]} app]
-    (assoc app
-           :direction :forward
-           :complete (conj complete {:status result, :item (peek queue)})
-           :queue (pop queue))))
+  ; pre-calculate new queue and complete collections so we can both side-effect
+  ; with util/store _and_ return the assoc result.
+  (let [{:keys [queue complete]} app
+        complete (conj complete {:status result, :item (peek queue)})
+        queue (pop queue)]
+    (util/store :records {:queue queue, :complete complete})
+    (assoc app :direction :forward, :queue queue, :complete complete)))
 
 (defn- approve [app]
   (om/transact! app (partial advance :approved)))
@@ -77,16 +79,21 @@
                :complete (pop complete))))))
 
 (defn- load-initial-data [app]
-  (go (let [data (util/keywordify (<! (util/get-json data-url)))]
-        (om/transact! app
-          (fn [app]
-            (do
-              (if-let [records (util/fetch :records)]
-                ; set start point based on local state
-                (.log js/console "--> Should resume from localStorage")
-                ; initialize local state based on loaded data
-                (.log js/console "--> Should initialize localStorage")))
-            (assoc app :ready? true, :queue data))))))
+  (if-let [records (util/fetch :records)]
+    ; restore records from localStorage without loading JSON
+    (om/transact! app
+      (fn [app]
+        (.log js/console "...restored state from localStorage!")
+        (assoc app
+               :ready? true
+               :queue (:queue records)
+               :complete (:complete records))))
+    ; load data from JSON, then set it in the app
+    (go (let [data (<! (util/get-json data-url))]
+          (.log js/console "...loaded data from JSON!")
+          (om/transact! app
+            (fn [app]
+              (assoc app :ready? true, :queue data)))))))
 
 ;; Given an input channel of KEYDOWN events, returns an output channel of
 ;; :approve, :reject, and :undo action keywords. Keystrokes not corresponding
@@ -134,6 +141,7 @@
             (if-let [current-id (-> app :queue peek :id)]
               (dom/div nil
                 (dom/h1 nil "Wrongtangular")
+                (om/build views/progress app)
                 (om/build views/tinder
                   {:image-set (image-set app)
                    :last-action (last-action app)

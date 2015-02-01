@@ -33,3 +33,21 @@ div.animated {
 .image-title {
   margin-bottom: 30px;
 }
+
+.progress div {
+  position: absolute;
+  height: 10px;
+}
+
+.progress .total {
+  width: 100%;
+  background-color: blue;
+}
+
+.progress .complete {
+  background-color: silver;
+}
+
+.progress .text {
+  top: 16px;
+}

@@ -5,6 +5,13 @@
   (:import [goog.net XhrIo]
            goog.net.EventType))
 
+;; Changes string keys to keyword keys in a collection.
+(defn keywordify [m]
+  (cond
+    (map? m) (into {} (for [[k v] m] [(keyword k) (keywordify v)]))
+    (coll? m) (vec (map keywordify m))
+    :else m))
+
 ;; Returns a channel which will contain the decoded JSON data, as a
 ;; ClojureScript data structure.
 (defn get-json [url]
@@ -14,18 +21,12 @@
       (fn [e]
         (put! out (->> (.getResponseText xhr)
                     (.parse js/JSON)
-                    (js->clj))))) ; TODO: use Transit instead?
+                    (js->clj)
+                    (keywordify))))) ; TODO: use Transit instead?
     (. xhr
       (send url "GET"
         #js {"Content-Type" "application/json"}))
     out))
-
-;; Changes string keys to keyword keys in a collection.
-(defn keywordify [m]
-  (cond
-    (map? m) (into {} (for [[k v] m] [(keyword k) (keywordify v)]))
-    (coll? m) (vec (map keywordify m))
-    :else m))
 
 ; localStorage involves a lot of messing around with string decoding, so I
 ; borrowed these functions from http://adambard.com/blog/a-simple-clojurescript-app/

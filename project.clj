@@ -13,6 +13,7 @@
                  [enlive "1.1.5"]
                  [om "0.7.3"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
+                 [com.cognitect/transit-cljs "0.8.202"]
                  [figwheel "0.1.4-SNAPSHOT"]
                  [environ "1.0.0"]
                  [com.cemerick/piggieback "0.1.5"]
