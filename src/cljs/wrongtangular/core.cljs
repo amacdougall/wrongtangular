@@ -39,27 +39,61 @@
         #js {"Content-Type" "application/json"}))
     out))
 
+;; App state atom. Contains the following keys:
+;; :ready? - A Boolean which is true when initial data has loaded.
+;; :direction - Either :forward or :backward, based on advance/undo status.
+;; :queue - A PersistentQueue of items yet to be judged.
+;; :complete - A vector of items which have been judged.
+;;
+;; Note: The queue and complete collections use appropriate data structures.
+;; Use peek/pop/conj and enjoy the freedom from implementation details.
 (defonce app-state (atom {:ready? false,
-                          :queue [],
-                          :rejected [],
-                          :approved []}))
+                          :direction :forward
+                          :queue cljs.core.PersistentQueue.EMPTY,
+                          :complete []}))
+; NOTE: You may find online mentions of PersistentQueue/EMPTY; this has been
+; changed to .EMPTY. See https://github.com/clojure/clojurescript/blob/master/src/cljs/cljs/core.cljs
 
-; Returns the next image to be examined, from the app-state queue.
-(defn- next-image [app]
-  (first (:queue app)))
+;; Returns the previous, current, and next images, as a vec. The previous image
+;; is held for rapid display on undo, the current one is displayed, and the next
+;; one is preloaded.
+(defn- image-set [{:keys [queue complete]}]
+  [(:item (peek complete))
+   (peek queue)
+   (peek (pop queue))])
+
+;; Returns the status keyword of the last judged image, either :approved or
+;; :rejected.
+(defn- last-action [app]
+  (:status (peek (:complete app))))
+
+;; Given a result keyword :approved or :rejected and an app state cursor,
+;; removes the current item from the queue and adds it to the complete stack as
+;; a vector in the form {:status result, :item <item>}.
+(defn- advance [result app]
+  (let [{:keys [queue complete]} app]
+    (assoc app
+           :direction :forward
+           :complete (conj complete {:status result, :item (peek queue)})
+           :queue (pop queue))))
 
 (defn- approve [app]
-  (.log js/console "image approved!"))
+  (om/transact! app (partial advance :approved)))
 
 (defn- reject [app]
-  (.log js/console "image rejected!"))
+  (om/transact! app (partial advance :rejected)))
 
 (defn- undo [app]
-  (.log js/console "last action undone!"))
+  (om/transact! app
+    (fn [app]
+      (let [{:keys [queue complete]} app]
+        (assoc app
+               :direction :backward
+               :queue (conj queue (:item (peek complete)))
+               :complete (pop complete))))))
 
 (defn- load-initial-data [app]
   (go (let [data (<! (get-json data-url))]
-        (.log js/console (pr-str data)) ; why is this happening twice, then?
         (om/transact! app #(assoc % :ready? true, :queue data)))))
 
 ;; Given an input channel of KEYDOWN events, returns an output channel of
@@ -105,7 +139,15 @@
         (render [_]
           (if-not (:ready? app)
             (om/build views/loading app)
-            (om/build views/tinder (next-image app))))
+            (if-let [current-id (get (peek (:queue app)) "id")]
+              (dom/div nil
+                (dom/h1 nil "Wrongtangular")
+                (om/build views/tinder
+                  {:image-set (image-set app)
+                   :last-action (last-action app)
+                   :direction (:direction app)}
+                  {:react-key current-id}))
+              (dom/div nil "OUT OF IMAGES, YAY"))))
         om/IWillMount
         (will-mount [_]
           (setup app))
