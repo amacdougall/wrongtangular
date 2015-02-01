@@ -51,6 +51,30 @@
 (defn- last-action [app]
   (:status (peek (:complete app))))
 
+;; Stores the current progress in localStorage as an array of status/id pairs.
+(defn- store-in-records [complete]
+  (let [dehydrate (fn [entry] [(:status entry) (-> entry :item :id)])]
+    (util/store :records (mapv dehydrate complete))))
+
+;; Given a dataset, attempts to produce a queue and a complete list from
+;; localStorage data. Returns a [queue complete] pair if successful; nil
+;; otherwise.
+(defn restore-from-records [data]
+  (if-let [records (util/fetch :records)]
+    (let [has-id (fn [id] #(= (:id %) id))
+          find-by-id (fn [id data] (first (filter (has-id id) data)))
+          rehydrate (fn [[status id]]
+                      {:status (keyword status)
+                       :item (find-by-id id data)})
+          complete (mapv rehydrate (sort-by :id records))
+          completed-ids (into #{} (map #(-> % :item :id)) complete)
+          queue (->> data
+                  (remove #(completed-ids (:id %)))
+                  (sort-by :id)
+                  (into cljs.core.PersistentQueue.EMPTY))]
+      (.log js/console "restore-from-records: queue %o" (pr-str queue))
+      [queue complete])))
+
 ;; Given a result keyword :approved or :rejected and an app state cursor,
 ;; removes the current item from the queue and adds it to the complete stack as
 ;; a vector in the form {:status result, :item <item>}.
@@ -60,7 +84,7 @@
   (let [{:keys [queue complete]} app
         complete (conj complete {:status result, :item (peek queue)})
         queue (pop queue)]
-    (util/store :records {:queue queue, :complete complete})
+    (store-in-records complete)
     (assoc app :direction :forward, :queue queue, :complete complete)))
 
 (defn- approve [app]
@@ -72,28 +96,30 @@
 (defn- undo [app]
   (om/transact! app
     (fn [app]
-      (let [{:keys [queue complete]} app]
-        (assoc app
-               :direction :backward
-               :queue (conj queue (:item (peek complete)))
-               :complete (pop complete))))))
+      (let [{:keys [queue complete]} app
+            queue (conj queue (:item (peek complete)))
+            complete (pop complete)]
+        (store-in-records complete)
+        (assoc app :direction :backward, :queue queue, :complete complete)))))
 
 (defn- load-initial-data [app]
-  (if-let [records (util/fetch :records)]
-    ; restore records from localStorage without loading JSON
-    (om/transact! app
-      (fn [app]
-        (.log js/console "...restored state from localStorage!")
-        (assoc app
-               :ready? true
-               :queue (:queue records)
-               :complete (:complete records))))
-    ; load data from JSON, then set it in the app
-    (go (let [data (<! (util/get-json data-url))]
-          (.log js/console "...loaded data from JSON!")
+  (go (let [data (sort-by :id (<! (util/get-json data-url)))]
+        (if-let [[queue complete] (restore-from-records data)]
+          ; restore records from localStorage without loading JSON
           (om/transact! app
             (fn [app]
-              (assoc app :ready? true, :queue data)))))))
+              (.log js/console "...restored state from localStorage!")
+              (assoc app
+                     :ready? true
+                     :queue queue
+                     :complete complete)))
+          ; load data from JSON, then set it in the app
+          (om/transact! app
+            (fn [app]
+              (.log js/console "...loaded data from JSON!")
+              (assoc app
+                     :ready? true
+                     :queue (into cljs.core.PersistentQueue.EMPTY data))))))))
 
 ;; Given an input channel of KEYDOWN events, returns an output channel of
 ;; :approve, :reject, and :undo action keywords. Keystrokes not corresponding
@@ -136,6 +162,9 @@
       (reify
         om/IRender
         (render [_]
+          (.log js/console "root: queue of %d items, current-id %s"
+                (count (:queue app))
+                (-> app :queue peek :id))
           (if-not (:ready? app)
             (om/build views/loading app)
             (if-let [current-id (-> app :queue peek :id)]
