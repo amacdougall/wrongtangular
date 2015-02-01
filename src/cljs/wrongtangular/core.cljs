@@ -45,6 +45,16 @@
    (peek queue)
    (peek (pop queue))])
 
+(defn- approved-ids [app]
+  (->> (:complete app)
+    (filter #(= (:status %) :approved))
+    (map #(-> % :item :id))))
+
+(defn- rejected-ids [app]
+  (->> (:complete app)
+    (filter #(= (:status %) :rejected))
+    (map #(-> % :item :id))))
+
 ;; Returns the status keyword of the last judged image, either :approved or
 ;; :rejected.
 (defn- last-action [app]
@@ -164,30 +174,27 @@
             (if-let [current-id (-> app :queue peek :id)]
               (dom/div nil
                 (dom/h1 nil "Wrongtangular")
-                (dom/p nil "(to restart, run `localStorage.clear()` in the console and refresh.")
-                (om/build views/progress app)
+                (dom/p nil "asdf to reject! jkl; to approve! u to undo! (localStorage.clear() in the JS console to start over!)")
+                (om/build views/progress
+                  {:app app
+                   :approved-count (count (approved-ids app))
+                   :rejected-count (count (rejected-ids app))})
                 (om/build views/tinder
                   {:image-set (image-set app)
                    :last-action (last-action app)
                    :direction (:direction app)}
                   {:react-key current-id}))
-              (let [approved-ids (->> (:complete app)
-                                   (filter #(= (:status %) :approved))
-                                   (map #(-> % :item :id)))
-                    rejected-ids (->> (:complete app)
-                                   (filter #(= (:status %) :rejected))
-                                   (map #(-> % :item :id)))]
-                (dom/div nil
-                  (dom/h1 nil "Processing complete!")
-                  (dom/p nil "(to start over, run `localStorage.clear()` in the console and refresh.")
-                  (dom/h2 nil "Approved ids:")
-                  (dom/textarea #js {:rows 20
-                                     :cols 60
-                                     :value (string/join ", " approved-ids)})
-                  (dom/h2 nil "Rejected ids:")
-                  (dom/textarea #js {:rows 20
-                                     :cols 60
-                                     :value (string/join ", " rejected-ids)}))))))
+              (dom/div nil
+                (dom/h1 nil "Processing complete!")
+                (dom/p nil "(to start over, run `localStorage.clear()` in the console and refresh.")
+                (dom/h2 nil "Approved ids:")
+                (dom/textarea #js {:rows 20
+                                   :cols 60
+                                   :value (string/join ", " (approved-ids app))})
+                (dom/h2 nil "Rejected ids:")
+                (dom/textarea #js {:rows 20
+                                   :cols 60
+                                   :value (string/join ", " (rejected-ids app))})))))
         om/IWillMount
         (will-mount [_]
           (setup app))

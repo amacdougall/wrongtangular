@@ -43,13 +43,15 @@
                 (image-title next-image)
                 (image-tag next-image)))))))))
 
-(defn progress [app owner]
+(defn progress [{:keys [app approved-count rejected-count]} owner]
   (reify
     om/IRender
     (render [_]
       (let [index (count (:complete app))
             total (count (mapcat app [:queue :complete]))
-            text (str index "/" total)
+            text (str index "/" total ": "
+                      approved-count " approved, "
+                      rejected-count " rejected")
             percentage (-> index
                          (/ total)
                          (* 100)
