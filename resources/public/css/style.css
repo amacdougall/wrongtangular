@@ -39,6 +39,10 @@ div.animated {
   height: 10px;
 }
 
+.progress .total, .progress .complete {
+  top: 28px;
+}
+
 .progress .total {
   width: 100%;
   background-color: blue;
@@ -46,8 +50,4 @@ div.animated {
 
 .progress .complete {
   background-color: silver;
-}
-
-.progress .text {
-  top: 16px;
 }
