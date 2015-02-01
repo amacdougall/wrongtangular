@@ -1,14 +1,13 @@
 (ns wrongtangular.core
   (:require [wrongtangular.views :as views]
+            [wrongtangular.util :as util]
             [cljs.core.async :refer [>! <! chan put!] :as async]
             [goog.events :as events]
             [goog.dom :as gdom]
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true])
-  (:import [goog.net XhrIo]
-           goog.net.EventType
-           [goog.events EventType])
-  (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
+  (:require-macros [cljs.core.async.macros :refer [go go-loop]])
+  (:import [goog.events EventType]))
 
 (def data-url "data/suspicious_papers.json")
 
@@ -23,21 +22,6 @@
 ;; Key codes of keys which undo the most recent judgment. Currently only the
 ;; "u" key.
 (def undo-keys #{85}) ; u
-
-;; Returns a channel which will contain the decoded JSON data, as a
-;; ClojureScript data structure.
-(defn get-json [url]
-  (let [xhr (XhrIo.)
-        out (chan)]
-    (events/listen xhr goog.net.EventType.COMPLETE
-      (fn [e]
-        (put! out (->> (.getResponseText xhr)
-                    (.parse js/JSON)
-                    (js->clj))))) ; TODO: use Transit instead?
-    (. xhr
-      (send url "GET"
-        #js {"Content-Type" "application/json"}))
-    out))
 
 ;; App state atom. Contains the following keys:
 ;; :ready? - A Boolean which is true when initial data has loaded.
@@ -93,8 +77,16 @@
                :complete (pop complete))))))
 
 (defn- load-initial-data [app]
-  (go (let [data (<! (get-json data-url))]
-        (om/transact! app #(assoc % :ready? true, :queue data)))))
+  (go (let [data (util/keywordify (<! (util/get-json data-url)))]
+        (om/transact! app
+          (fn [app]
+            (do
+              (if-let [records (util/fetch :records)]
+                ; set start point based on local state
+                (.log js/console "--> Should resume from localStorage")
+                ; initialize local state based on loaded data
+                (.log js/console "--> Should initialize localStorage")))
+            (assoc app :ready? true, :queue data))))))
 
 ;; Given an input channel of KEYDOWN events, returns an output channel of
 ;; :approve, :reject, and :undo action keywords. Keystrokes not corresponding
@@ -139,7 +131,7 @@
         (render [_]
           (if-not (:ready? app)
             (om/build views/loading app)
-            (if-let [current-id (get (peek (:queue app)) "id")]
+            (if-let [current-id (-> app :queue peek :id)]
               (dom/div nil
                 (dom/h1 nil "Wrongtangular")
                 (om/build views/tinder

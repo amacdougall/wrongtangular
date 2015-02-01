@@ -11,9 +11,9 @@
       (let [[previous-image current-image next-image] image-set
             image-title (fn [image]
                           (dom/div #js {:className "image-title"}
-                            (str (image "id") ": " (image "name"))))
+                            (str (:id image) ": " (:name image))))
             image-tag (fn [image]
-                        (dom/div nil (dom/img #js {:src (image "url")})))]
+                        (dom/div nil (dom/img #js {:src (:url image)})))]
         (dom/div nil
           ; previous image: will not exist on app load
           (when previous-image
