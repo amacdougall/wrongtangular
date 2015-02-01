@@ -92,13 +92,14 @@
   (om/transact! app (partial advance :rejected)))
 
 (defn- undo [app]
-  (om/transact! app
-    (fn [app]
-      (let [{:keys [queue complete]} app
-            queue (conj queue (:item (peek complete)))
-            complete (pop complete)]
-        (store-in-records complete)
-        (assoc app :direction :backward, :queue queue, :complete complete)))))
+  (when-not (empty? (:complete @app))
+    (om/transact! app
+      (fn [app]
+        (let [{:keys [queue complete]} app
+              queue (conj queue (:item (peek complete)))
+              complete (pop complete)]
+          (store-in-records complete)
+          (assoc app :direction :backward, :queue queue, :complete complete))))))
 
 (defn- load-initial-data [app]
   (go (let [data (sort-by :id (<! (util/get-json data-url)))]
