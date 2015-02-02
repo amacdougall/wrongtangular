@@ -17,12 +17,10 @@
         (dom/div nil
           ; previous image: will not exist on app load
           (when previous-image
-            (let [previous-class
-                  (case direction
-                    :forward (case last-action
-                               :approved "animated fadeOutRight"
-                               :rejected "animated fadeOutLeft")
-                    :backward "hidden")]
+            (let [previous-class (case [direction last-action]
+                                   [:forward :approved] "animated fadeOutRight"
+                                   [:forward :rejected] "animated fadeOutLeft"
+                                   "hidden")]
               (dom/div #js {:className previous-class}
                 (image-title previous-image)
                 (image-tag previous-image))))
@@ -36,6 +34,7 @@
           (when next-image
             (case direction
               :forward
+              ; preload next image as an offset background-image
               (let [bg-url (str "url(" (next-image "url") ") no-repeat -9999px -9999px")]
                 (dom/div #js {:style {:background bg-url}} ""))
               :backward
