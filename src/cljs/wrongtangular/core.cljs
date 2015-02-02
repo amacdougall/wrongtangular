@@ -173,17 +173,28 @@
             (om/build views/loading app)
             (if-let [current-id (-> app :queue peek :id)]
               (dom/div nil
-                (dom/h1 nil "Wrongtangular")
-                (dom/p nil "asdf to reject! jkl; to approve! u to undo! (localStorage.clear() in the JS console to start over!)")
-                (om/build views/progress
+                (om/build views/progress-bar
                   {:app app
                    :approved-count (count (approved-ids app))
                    :rejected-count (count (rejected-ids app))})
-                (om/build views/tinder
-                  {:image-set (image-set app)
-                   :last-action (last-action app)
-                   :direction (:direction app)}
-                  {:react-key current-id}))
+                (dom/div #js {:className "panels"}
+                  (dom/div #js {:className "left-panel"}
+                    (dom/h1 nil "Wrongtangular!")
+                    (dom/div #js {:className "instructions"}
+                      (dom/p nil "asdf to reject!")
+                      (dom/p nil "jkl; to approve!")
+                      (dom/p nil "u to undo!")
+                      (dom/p nil "localStorage.clear() to reset!"))
+                    (om/build views/progress-text
+                      {:app app
+                       :approved-count (count (approved-ids app))
+                       :rejected-count (count (rejected-ids app))}))
+                  (dom/div #js {:className "right-panel"}
+                    (om/build views/tinder
+                      {:image-set (image-set app)
+                       :last-action (last-action app)
+                       :direction (:direction app)}
+                      {:react-key current-id}))))
               (dom/div nil
                 (dom/h1 nil "Processing complete!")
                 (dom/p nil "(to start over, run `localStorage.clear()` in the console and refresh.")

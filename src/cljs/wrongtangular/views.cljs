@@ -3,33 +3,31 @@
             [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]))
 
+(defn- classes [& cs]
+  (string/join " " (remove nil? cs)))
+
 ;; Expects a wrongtangular.core/image-set.
 (defn tinder [{:keys [image-set last-action direction]} owner]
   (reify
     om/IRender
     (render [_]
       (let [[previous-image current-image next-image] image-set
-            image-title (fn [image]
-                          (dom/div #js {:className "image-title"}
-                            (str (:id image) ": " (:name image))))
-            image-tag (fn [image]
-                        (dom/div nil (dom/img #js {:src (:url image)})))]
-        (dom/div nil
+            image (fn [image class-name]
+                    (dom/div #js {:className class-name}
+                      (dom/p #js {:className "image-title"} (str (:id image) ": " (:name image)))
+                      (dom/img #js {:src (:url image)})))]
+        (dom/div #js {:className "tinder"}
           ; previous image: will not exist on app load
           (when previous-image
             (let [previous-class (case [direction last-action]
-                                   [:forward :approved] "animated fadeOutRight"
-                                   [:forward :rejected] "animated fadeOutLeft"
+                                   [:forward :approved] "previous animated fadeOutRight"
+                                   [:forward :rejected] "previous animated fadeOutLeft"
                                    "hidden")]
-              (dom/div #js {:className previous-class}
-                (image-title previous-image)
-                (image-tag previous-image))))
+              (image previous-image (classes "previous" previous-class))))
           ; current image: always exists if we're rendering this at all
-          (dom/div #js {:className (case direction
-                                     :forward "animated fadeInUp"
-                                     :backward "animated fadeInDown")}
-            (image-title current-image)
-            (image-tag current-image))
+          (image current-image (classes "current" (case direction
+                                                    :forward "animated fadeInUp"
+                                                    :backward "animated fadeInDown")))
           ; next image: after undo, this is what the user was _about_ to judge
           (when next-image
             (case direction
@@ -38,29 +36,33 @@
               (let [bg-url (str "url(" (next-image "url") ") no-repeat -9999px -9999px")]
                 (dom/div #js {:style {:background bg-url}} ""))
               :backward
-              (dom/div #js {:className "animated fadeOutDown"}
-                (image-title next-image)
-                (image-tag next-image)))))))))
+                (image next-image "next animated fadeOutDown"))))))))
 
-(defn progress [{:keys [app approved-count rejected-count]} owner]
+(defn progress-text [{:keys [app approved-count rejected-count]} owner]
+  (reify
+    om/IRender
+    (render [_]
+      (let [index (count (:complete app))
+            total (count (mapcat app [:queue :complete]))]
+        (dom/div #js {:className "progress-text"}
+          (dom/p nil (str index "/" total))
+          (dom/p nil (str approved-count " approved"))
+          (dom/p nil (str rejected-count " rejected")))))))
+
+(defn progress-bar [{:keys [app approved-count rejected-count]} owner]
   (reify
     om/IRender
     (render [_]
       (let [index (count (:complete app))
             total (count (mapcat app [:queue :complete]))
-            text (str index "/" total ": "
-                      approved-count " approved, "
-                      rejected-count " rejected")
             percentage (-> index
                          (/ total)
                          (* 100)
                          (Math/round)
                          (str "%"))]
-        (dom/div #js {:className "progress"}
-          (dom/div #js {:className "text"} text)
+        (dom/div #js {:className "progress-bar"}
           (dom/div #js {:className "total"} "")
-          (dom/div #js {:className "complete"
-                        :style #js {:width percentage}} ""))))))
+          (dom/div #js {:className "complete" :style #js {:width percentage}} ""))))))
 
 (defn loading [owner]
   (reify
