@@ -8,8 +8,13 @@ pom.xml.asc
 /.lein-*
 /.nrepl-port
 /resources/public/js
+/resources/public/css
 /out
 /.repl
 
-# vim artifacts
+# vim swapfiles
 *.sw[a-p]
+
+# other artifacts
+/.sass-cache
+/figwheel_server.log

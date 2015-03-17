@@ -163,54 +163,53 @@
   (load-initial-data app)
   (handle-inputs app))
 
-(defn main []
-  (om/root
-    (fn [app owner]
-      (reify
-        om/IRender
-        (render [_]
-          (if-not (:ready? app)
-            (om/build views/loading app)
-            (if-let [current-id (-> app :queue peek :id)]
-              (dom/div nil
-                (om/build views/progress-bar
-                  {:app app
-                   :approved-count (count (approved-ids app))
-                   :rejected-count (count (rejected-ids app))})
-                (dom/div #js {:className "panels"}
-                  (dom/div #js {:className "left-panel"}
-                    (dom/h1 nil "Wrongtangular!")
-                    (dom/div #js {:className "instructions"}
-                      (dom/p nil "asdf to reject!")
-                      (dom/p nil "jkl; to approve!")
-                      (dom/p nil "u to undo!")
-                      (dom/p nil "localStorage.clear() to reset!"))
-                    (om/build views/progress-text
-                      {:app app
-                       :approved-count (count (approved-ids app))
-                       :rejected-count (count (rejected-ids app))}))
-                  (dom/div #js {:className "right-panel"}
-                    (om/build views/tinder
-                      {:image-set (image-set app)
-                       :last-action (last-action app)
-                       :direction (:direction app)}
-                      {:react-key current-id}))))
-              (dom/div nil
-                (dom/h1 nil "Processing complete!")
-                (dom/p nil "(to start over, run `localStorage.clear()` in the console and refresh.")
-                (dom/h2 nil "Approved ids:")
-                (dom/textarea #js {:rows 20
-                                   :cols 60
-                                   :value (string/join ", " (approved-ids app))})
-                (dom/h2 nil "Rejected ids:")
-                (dom/textarea #js {:rows 20
-                                   :cols 60
-                                   :value (string/join ", " (rejected-ids app))})))))
-        om/IWillMount
-        (will-mount [_]
-          (setup app))
-        om/IWillUnmount
-        (will-unmount [_]
-          (stop-handling-inputs))))
-    app-state
-    {:target (. js/document (getElementById "app"))}))
+(om/root
+  (fn [app owner]
+    (reify
+      om/IRender
+      (render [_]
+        (if-not (:ready? app)
+          (om/build views/loading app)
+          (if-let [current-id (-> app :queue peek :id)]
+            (dom/div nil
+              (om/build views/progress-bar
+                {:app app
+                 :approved-count (count (approved-ids app))
+                 :rejected-count (count (rejected-ids app))})
+              (dom/div #js {:className "panels"}
+                (dom/div #js {:className "left-panel"}
+                  (dom/h1 nil "Wrongtangular!")
+                  (dom/div #js {:className "instructions"}
+                    (dom/p nil "asdf to reject!")
+                    (dom/p nil "jkl; to approve!")
+                    (dom/p nil "u to undo!")
+                    (dom/p nil "localStorage.clear() to reset!"))
+                  (om/build views/progress-text
+                    {:app app
+                     :approved-count (count (approved-ids app))
+                     :rejected-count (count (rejected-ids app))}))
+                (dom/div #js {:className "right-panel"}
+                  (om/build views/tinder
+                    {:image-set (image-set app)
+                     :last-action (last-action app)
+                     :direction (:direction app)}
+                    {:react-key current-id}))))
+            (dom/div nil
+              (dom/h1 nil "Processing complete!")
+              (dom/p nil "(to start over, run `localStorage.clear()` in the console and refresh.")
+              (dom/h2 nil "Approved ids:")
+              (dom/textarea #js {:rows 20
+                                 :cols 60
+                                 :value (string/join ", " (approved-ids app))})
+              (dom/h2 nil "Rejected ids:")
+              (dom/textarea #js {:rows 20
+                                 :cols 60
+                                 :value (string/join ", " (rejected-ids app))})))))
+      om/IWillMount
+      (will-mount [_]
+        (setup app))
+      om/IWillUnmount
+      (will-unmount [_]
+        (stop-handling-inputs))))
+  app-state
+  {:target (. js/document (getElementById "app"))})
