@@ -31,7 +31,7 @@
 ; localStorage involves a lot of messing around with string decoding, so I
 ; borrowed these functions from http://adambard.com/blog/a-simple-clojurescript-app/
 ;; Stores an item in localStorage.
-(defn store [k v]
+(defn store! [k v]
   (.setItem js/localStorage k (js/JSON.stringify (clj->js v))))
 
 ;; Retrieves an item from localStorage, or the default value if none is
