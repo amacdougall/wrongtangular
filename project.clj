@@ -2,7 +2,7 @@
   :description "Quick image categorization webapp."
 
   :dependencies [[org.clojure/clojure "1.7.0-alpha5"]
-                 [org.clojure/clojurescript "0.0-3123"]
+                 [org.clojure/clojurescript "0.0-3126"]
                  [figwheel "0.2.5"]
                  [org.omcljs/om "0.8.8"]
                  [sablono "0.3.4"]
