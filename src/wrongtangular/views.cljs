@@ -13,6 +13,8 @@
 ;; Expects a wrongtangular.core/image-set.
 (defn tinder [{:keys [image-set last-action direction]} owner]
   (reify
+    om/IDisplayName
+    (display-name [_] "Tinder")
     om/IRender
     (render [_]
       (let [[previous-image current-image next-image] image-set
@@ -46,6 +48,8 @@
 
 (defn progress-text [{:keys [app approved-count rejected-count]} owner]
   (reify
+    om/IDisplayName
+    (display-name [_] "ProgressText")
     om/IRender
     (render [_]
       (let [index (count (:complete app))
@@ -57,6 +61,8 @@
 
 (defn progress-bar [{:keys [app approved-count rejected-count]} owner]
   (reify
+    om/IDisplayName
+    (display-name [_] "ProgressBar")
     om/IRender
     (render [_]
       (let [index (count (:complete app))
@@ -73,12 +79,16 @@
 
 (defn loading [owner]
   (reify
+    om/IDisplayName
+    (display-name [_] "Loading")
     om/IRender
     (render [_]
       (html [:div nil "loading..."]))))
 
 (defn main [{:keys [app current-id]} owner]
   (reify
+    om/IDisplayName
+    (display-name [_] "Main")
     om/IRender
     (render [_]
       (html
@@ -108,6 +118,8 @@
 
 (defn results [app owner]
   (reify
+    om/IDisplayName
+    (display-name [_] "Results")
     om/IRender
     (render [_]
       (html
