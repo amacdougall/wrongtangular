@@ -1,13 +1,16 @@
 @import "compass/css3/border-radius";
 @import "compass/css3/flexbox";
 
+$background-color: #FFEACF;
+$panel-color: #FACC91;
+
 html {
   font-family: Verdana, Helvetica;
 }
 
 body {
   margin: 0;
-  background-color: #ffe2cf;
+  background-color: $background-color;
 }
 
 h1 {
@@ -46,7 +49,7 @@ $panel-margin: 5vh 5vw;
 
 .information {
   @include border-radius(2vh);
-  background-color: #FACAAE;
+  background-color: $panel-color;
   margin: $panel-margin;
   padding: 2vh 2vw;
   font-size: 0.8rem;
