@@ -18,11 +18,11 @@
     om/IRender
     (render [_]
       (let [[previous-image current-image next-image] image-set
-            image (fn [url class-name]
-                    (html
-                      [:div {:class class-name}
-                       [:p {:class "image-title"} (str (:id url) ": " (:name url))]
-                       [:img {:src (:url url)}]]))]
+            image-div (fn [image class-name]
+                        (html
+                          [:div {:class class-name}
+                           [:p {:class "image-title"} (str (:id image) ": " (:title image))]
+                           [:img {:src (:url image)}]]))]
         (html
           [:div {:class "tinder"}
            ; previous image: will not exist on app load
@@ -31,9 +31,9 @@
                                     [:forward :approved] "previous animated fadeOutRight"
                                     [:forward :rejected] "previous animated fadeOutLeft"
                                     "hidden")]
-               (image previous-image (classes "previous" previous-class))))
+               (image-div previous-image (classes "previous" previous-class))))
            ; current image: always exists if we're rendering this at all
-           (image current-image (classes "current" (case direction
+           (image-div current-image (classes "current" (case direction
                                                      :forward "animated fadeInUp"
                                                      :backward "animated fadeInDown")))
            ; next image: after undo, this is what the user was _about_ to judge
@@ -44,7 +44,7 @@
                (let [bg-url (str "url(" (next-image "url") ") no-repeat -9999px -9999px")]
                  [:div {:style {:background bg-url}} ""])
                :backward
-               (image next-image "next animated fadeOutDown")))])))))
+               (image-div next-image "next animated fadeOutDown")))])))))
 
 (defn progress-text [{:keys [app approved-count rejected-count]} owner]
   (reify
