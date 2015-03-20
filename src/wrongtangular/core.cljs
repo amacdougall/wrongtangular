@@ -1,4 +1,4 @@
-(ns wrongtangular.core
+(ns ^:figwheel-always wrongtangular.core
   (:require [wrongtangular.data :as data]
             [wrongtangular.views :as views]
             [cljs.core.async :refer [>! <! chan put!] :as async]

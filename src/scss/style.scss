@@ -5,6 +5,11 @@ html {
   font-family: Verdana, Helvetica;
 }
 
+body {
+  margin: 0;
+  background-color: #ffe2cf;
+}
+
 h1 {
   font-size: 1rem;
 }
@@ -13,23 +18,37 @@ div {
   position: relative;
 }
 
-.panels {
-  margin-top: 20px;
+$panel-margin: 5vh 5vw;
+
+.hidden {
+  display: none;
 }
 
-.left-panel, .right-panel {
-  display: inline-block;
-  vertical-align: top;
+.main {
+  @include flexbox((
+    display: flex,
+    flex-direction: column
+  ))
 }
 
-.left-panel {
-  width: 20%;
-  margin-right: 5rem;
-  padding: 1.5rem;
-  background-color: skyblue;
+.content {
+  @include flexbox((
+    display: flex,
+    flex-direction: row
+  ))
+
+  // TODO: use media queries to apply this style on phone-sized screens
+  // @include flexbox((
+  //   display: flex,
+  //   flex-direction: column-reverse
+  // ))
 }
 
-.instructions, .progress {
+.information {
+  @include border-radius(2vh);
+  background-color: #FACAAE;
+  margin: $panel-margin;
+  padding: 2vh 2vw;
   font-size: 0.8rem;
 }
 
@@ -40,15 +59,17 @@ div {
 }
 
 .tinder {
+  margin: $panel-margin;
+
   .previous {
     position: absolute;
     top: -16px;
   }
-}
 
-
-.hidden {
-  display: none;
+  img {
+    max-width: 80vw;
+    max-height: 80vh;
+  }
 }
 
 .image-title {
@@ -57,15 +78,16 @@ div {
 
 .progress-bar {
   .total, .complete {
-    height: 10px;
+    height: 1vh;
   }
 
   .total {
+    margin-bottom: -1vh;
     width: 100%;
-    background-color: blue;
+    background-color: #A9EBFF;
   }
   
   .complete {
-    background-color: silver;
+    background-color: #529DB2;
   }
 }
