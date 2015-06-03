@@ -126,15 +126,16 @@
     om/IRender
     (render [_]
       (html
-        [:div
+        [:div {:class "results"}
          [:h1 "Processing complete!"]
-         [:p "(to start over, run `localStorage.clear()` in the console and refresh."]
+         [:p "To start over, run `localStorage.clear()` in the console and refresh."]
+         [:p "Copy and paste these IDs somewhere useful. Better data export is on the to-do list..."]
          [:h2 "Approved ids:"]
-         [:textarea {:rows 20
+         [:textarea {:rows 10
                      :cols 60
                      :value (string/join ", " (data/approved-ids app))}]
          [:h2 nil "Rejected ids:"]
-         [:textarea {:rows 20
+         [:textarea {:rows 10
                      :cols 60
                      :value (string/join ", " (data/rejected-ids app))}]]))))
 
