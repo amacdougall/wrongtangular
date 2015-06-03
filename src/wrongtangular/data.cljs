@@ -4,7 +4,7 @@
             [cljs.core.async :refer [>! <! chan put!] :as async])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
-(def assets-url "data/assets.json")
+(def candidates-url "data/candidates.json")
 
 ;; App state atom. Contains the following keys:
 ;; :ready? - A Boolean which is true when initial data has loaded.
@@ -99,7 +99,7 @@
           (assoc app :direction :backward, :queue queue, :complete complete))))))
 
 (defn- load-initial-data! []
-  (go (let [data (sort-by :id (<! (util/get-json assets-url)))]
+  (go (let [data (sort-by :id (<! (util/get-json candidates-url)))]
         (if-let [[queue complete] (restore-from-records data)]
           ; restore records from localStorage without loading JSON
           (om/transact! (app-cursor)
