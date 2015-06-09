@@ -31,15 +31,21 @@
    (peek queue)
    (peek (pop queue))])
 
-(defn approved-ids [app]
-  (->> (:complete app)
-    (filter #(= (:status %) :approved))
-    (map #(-> % :item :id))))
-
 (defn rejected-ids [app]
   (->> (:complete app)
-    (filter #(= (:status %) :rejected))
-    (map #(-> % :item :id))))
+       (filter #(= (:status %) :rejected))
+       (map #(-> % :item :id))
+       distinct))
+
+;; Returns the ids of all candidates which have not been rejected. Note that if
+;; a candidate has multiple images, it will have one entry per image: even one
+;; rejected entry will disqualify the id.
+(defn approved-ids [app]
+  (->> (:complete app)
+       (filter #(= (:status %) :approved))
+       (map #(-> % :item :id))
+       (remove (into #{} (rejected-ids app)))
+       distinct))
 
 ;; Returns the status keyword of the last judged image, either :approved or
 ;; :rejected.
@@ -131,4 +137,4 @@
           ; load data from JSON, then set it in the app
           (om/transact! (app-cursor)
             (fn [app]
-              (assoc app :ready? true, :queue (data->queue data))))))))
+              (assoc app :ready? true, :queue (data->queue (subvec data 0 9)))))))))
