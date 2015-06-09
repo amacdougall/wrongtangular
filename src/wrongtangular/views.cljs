@@ -79,13 +79,13 @@
                       :style {:width percentage}} ""]])))))
 
 ;; Displays a loading screen during the initial load from JSON or localStorage.
-(defn loading [owner]
+(defn loading [app owner]
   (reify
     om/IDisplayName
     (display-name [_] "Loading")
     om/IRender
     (render [_]
-      (html [:div nil "loading..."]))))
+      (html [:div {:class "loading"} "Processing data; this may take a few minutes."]))))
 
 ;; Displays a progress bar, the previous/current/next images, status text, and help text.
 (defn main [{:keys [app current-id]} owner]

@@ -34,6 +34,10 @@ $panel-margin: 5vh 5vw;
   ))
 }
 
+.loading {
+  margin: 5em;
+}
+
 .content {
   @include flexbox((
     display: flex,
