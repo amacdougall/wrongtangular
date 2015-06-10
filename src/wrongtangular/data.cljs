@@ -112,17 +112,20 @@
 ;; In either case, this function returns one {:id :name :url} hash per url.
 ;; URLs are assumed unique; ids and names are not.
 (defn- data->queue [data]
-  (let [f (fn [coll entry]
-            (cond
-              ;; place single-url entries directly in the output
-              (contains? entry :url) (conj coll entry)
-              ;; convert multiple urls to single url entries
-              (contains? entry :urls)
-              (vec (concat coll (map #(-> entry (dissoc entry :urls) (assoc :url %))
-                                     (:urls entry))))
-              ;; return collection unchanged
-              :default coll))]
-    (into '() (reduce f [] data))))
+  (let [url->entry
+        (fn [entry url]
+          (-> entry (dissoc entry :urls) (assoc :url url)))
+        entries->queue
+        (fn [queue entry]
+          (cond
+            ;; place single-url entries directly in the output
+            (contains? entry :url) (conj queue entry)
+            ;; convert multiple urls to single url entries
+            (contains? entry :urls)
+            (into queue (map (partial url->entry entry) (:urls entry)))
+            ;; return queue unchanged
+            :default queue))]
+    (into '() (reduce entries->queue [] data))))
 
 (defn- load-initial-data! []
   (go (let [data (sort-by :id (<! (util/get-json candidates-url)))]
@@ -137,4 +140,4 @@
           ; load data from JSON, then set it in the app
           (om/transact! (app-cursor)
             (fn [app]
-              (assoc app :ready? true, :queue (data->queue (subvec data 0 9)))))))))
+              (assoc app :ready? true, :queue (data->queue data))))))))

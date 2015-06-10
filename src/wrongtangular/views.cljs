@@ -85,7 +85,7 @@
     (display-name [_] "Loading")
     om/IRender
     (render [_]
-      (html [:div {:class "loading"} "Processing data; this may take a few minutes."]))))
+      (html [:div {:class "loading"} "Processing data; this may take a few seconds."]))))
 
 ;; Displays a progress bar, the previous/current/next images, status text, and help text.
 (defn main [{:keys [app current-id]} owner]
