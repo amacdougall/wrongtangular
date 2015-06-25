@@ -8,5 +8,8 @@
   (:import [goog.events EventType]))
 
 
-(om/root views/root data/app-state
-  {:target (. js/document (getElementById "app"))})
+(defn main []
+  (om/root views/root data/app-state
+           {:target (. js/document (getElementById "app"))}))
+
+(main)
