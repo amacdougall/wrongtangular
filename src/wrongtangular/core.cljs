@@ -7,9 +7,9 @@
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:import [goog.events EventType]))
 
-
 (defn main []
   (om/root views/root data/app-state
            {:target (. js/document (getElementById "app"))}))
 
+(data/load-initial-data!)
 (main)

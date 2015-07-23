@@ -55,9 +55,9 @@
       (let [index (count (:complete app))
             total (count (mapcat app [:queue :complete]))]
         (html [:div {:class "status"}
-               [:p (str index "/" total)]
-               [:p (str approved-count " approved")]
-               [:p (str rejected-count " rejected")]])))))
+               [:p (str index "/" total " side images")]
+               [:p (str approved-count " packages approved")]
+               [:p (str rejected-count " packages rejected")]])))))
 
 ;; A simple linear progress bar.
 (defn progress-bar [{:keys [app approved-count rejected-count]} owner]
@@ -147,14 +147,13 @@
     (display-name [_] "Root")
     om/IRender
     (render [_]
-      (if-not (:ready? app)
-        (om/build loading app)
+      (if (:ready? app)
         (if-let [current-id (-> app :queue peek :id)]
           (om/build main {:app app, :current-id current-id})
-          (om/build results app))))
+          (om/build results app))
+        (om/build loading app)))
     om/IWillMount
     (will-mount [_]
-      (data/load-initial-data!)
       (input/handle-inputs!))
     om/IWillUnmount
     (will-unmount [_]

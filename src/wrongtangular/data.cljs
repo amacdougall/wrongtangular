@@ -39,7 +39,9 @@
 
 ;; Returns the ids of all candidates which have not been rejected. Note that if
 ;; a candidate has multiple images, it will have one entry per image: even one
-;; rejected entry will disqualify the id.
+;; rejected entry will disqualify the id, but if any entry has been approved,
+;; the id will appear in approved-ids even if not all entries have been
+;; evaluated.
 (defn approved-ids [app]
   (->> (:complete app)
        (filter #(= (:status %) :approved))
@@ -52,41 +54,38 @@
 (defn last-action [app]
   (:status (peek (:complete app))))
 
-;; Stores the current progress in localStorage as an array of status/id pairs.
-(defn store-in-records! [complete]
-  (let [dehydrate (fn [entry] [(:status entry) (-> entry :item :id)])]
-    (util/store! :records (mapv dehydrate complete))))
+;; Stores current queue and complete collections in localStorage.
+(defn save! []
+  (doseq [k [:queue :complete]]
+    (util/store! k (@app-state k))))
 
-;; Given a dataset, attempts to produce a queue and a complete list from
-;; localStorage data. Returns a [queue complete] pair if successful; nil
-;; otherwise.
-(defn restore-from-records [data]
-  (if-let [records (util/fetch :records)]
-    (let [has-id (fn [id] #(= (:id %) id))
-          find-by-id (fn [id data] (first (filter (has-id id) data)))
-          rehydrate (fn [[status id]]
-                      {:status (keyword status)
-                       :item (find-by-id id data)})
-          complete (mapv rehydrate (sort-by :id records))
-          completed-ids (into #{} (map #(-> % :item :id)) complete)
-          queue (->> data
-                  (remove #(completed-ids (:id %)))
-                  (sort-by :id)
-                  (into '()))]
-      [queue complete])))
+;; Returns the most recent :queue and :complete values from localStorage, as a
+;; [queue complete] pair. nil if no queue is available in localStorage.
+(defn restore-from-records []
+  (let [[queue complete] (mapv util/fetch [:queue :complete])]
+    (if (nil? queue)
+      nil
+      ; queue is stored as a JS array in localStorage, which becomes a
+      ; Vector when fetched; return it to a List.
+      [(apply list queue)
+       ; status keywords become string in localStorage; return them
+       ; to keywords.
+       (mapv (util/transform-map :status keyword) complete)])))
+; TODO: avoid both these rehydration steps by using Transit or something?
 
 ;; Given a result keyword :approved or :rejected and an app state map, returns
 ;; the app state with the current item removed from the queue and added it to
 ;; the complete stack as a vector in the form {:status result, :item <item>}.
 ;;
-;; Has the side effect of updating local storage, hence the ! name.
+;; Has the side effect of updating the :queue and :complete keys in
+;; localStorage, hence the bang name.
 (defn advance! [result app]
   ; pre-calculate new queue and complete collections so we can both side-effect
   ; with util/store _and_ return the assoc result.
   (let [{:keys [queue complete]} app
         complete (conj complete {:status result, :item (peek queue)})
         queue (pop queue)]
-    (store-in-records! complete)
+    (save!)
     (assoc app :direction :forward, :queue queue, :complete complete)))
 
 (defn approve! []
@@ -101,7 +100,7 @@
       (fn [{:keys [queue complete] :as app}]
         (let [queue (conj queue (:item (peek complete)))
               complete (pop complete)]
-          (store-in-records! complete)
+          (save!)
           (assoc app :direction :backward, :queue queue, :complete complete))))))
 
 ;; Given a seq data structure loaded from candidates.json, generates a list of
@@ -125,19 +124,22 @@
             (into queue (map (partial url->entry entry) (:urls entry)))
             ;; return queue unchanged
             :default queue))]
-    (into '() (reduce entries->queue [] data))))
+    (apply list (reduce entries->queue [] data))))
 
+;; Loads application data, from localStorage if possible and from the JSON file
+;; located at candidates-url if necessary. If the data is loaded from the JSON
+;; file, it will be run through data->queue and stashed in localStorage under
+;; the :queue key. In either case, updates the app state.
 (defn- load-initial-data! []
-  (go (let [data (sort-by :id (<! (util/get-json candidates-url)))]
-        (if-let [[queue complete] (restore-from-records data)]
-          ; restore records from localStorage without loading JSON
-          (om/transact! (app-cursor)
-            (fn [app]
-              (assoc app
-                     :ready? true
-                     :queue queue
-                     :complete complete)))
-          ; load data from JSON, then set it in the app
-          (om/transact! (app-cursor)
-            (fn [app]
-              (assoc app :ready? true, :queue (data->queue data))))))))
+  (let [[queue complete] (restore-from-records)]
+    (if (nil? queue)
+      (go (let [data (sort-by :id (<! (util/get-json candidates-url)))
+                queue (data->queue data)]
+            (om/transact!
+              (app-cursor)
+              (fn [app]
+                (assoc app :ready? true, :queue queue)))))
+      (om/transact!
+        (app-cursor)
+        (fn [app]
+          (assoc app :ready? true, :queue queue, :complete (or complete [])))))))

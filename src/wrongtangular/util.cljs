@@ -28,6 +28,14 @@
         #js {"Content-Type" "application/json"}))
     out))
 
+;; Given a key and a function, returns a function which expects a map, and
+;; returns the map with the function applied to the value at that key. For
+;; example, (map (transform-map :a inc) list-of-maps) would increment the :a
+;; value of each map.
+(defn transform-map [k f]
+  (fn [m]
+    (assoc m k (f (m k)))))
+
 ; localStorage involves a lot of messing around with string decoding, so I
 ; borrowed these functions from http://adambard.com/blog/a-simple-clojurescript-app/
 ;; Stores an item in localStorage.
